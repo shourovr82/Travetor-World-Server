@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { ServerApiVersion, MongoClient, ObjectId } = require('mongodb');
+const { ServerApiVersion, MongoClient, ObjectId, ObjectID } = require('mongodb');
 const { query } = require('express');
 require('dotenv').config();
 const app = express();
@@ -27,6 +27,12 @@ async function run() {
       const services = await cursor.toArray();
       res.send(services);
     })
+    app.get('/servicesHome', async (req, res) => {
+      const query = {};
+      const cursor = serviceCollection.find(query);
+      const services = await cursor.limit(3).toArray();
+      res.send(services);
+    })
 
     // get Service Details 
     app.get('/serviceDetails/:id', async (req, res) => {
@@ -39,14 +45,21 @@ async function run() {
     // get customer reviews
 
     app.get('/reviews', async (req, res) => {
-      const query = {};
-      const cursor = reviewsCollection.find(query);
+      const serviceTitle = req.query?.serviceName;
+      console.log(serviceTitle);
+      let newQuery = {};
+      if (req.query?.serviceName) {
+        newQuery = {
+          title: serviceTitle
+        }
+      }
+      const cursor = reviewsCollection.find(newQuery);
       const reviews = await cursor.toArray();
       res.send(reviews)
     })
 
 
-
+    // get user reviews or my reviews
     app.get('/myreview', async (req, res) => {
       const useremail = req.query?.email;
       let query = {};
@@ -54,25 +67,52 @@ async function run() {
         query = {
           email: useremail
         }
-        console.log(query);
       }
-
-
       const cursor = reviewsCollection.find(query);
       const reviews = await cursor.toArray();
-      console.log(reviews);
       res.send(reviews)
-
 
     })
 
     // post customer reviews
     app.post('/postReview', async (req, res) => {
       const review = req.body;
-      console.log(review);
       const result = await reviewsCollection.insertOne(review);
-      res.send(result)
+      res.send(review)
     })
+
+    // delete my review
+    app.delete('/deleteReview/:id', async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const query = { _id: ObjectId(id) };
+      const result = await reviewsCollection.deleteOne(query);
+      res.send(result);
+    })
+
+    // update user review
+    app.put('/userReview/:id', async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const filter = { _id: ObjectId(id) };
+      const review = req.body;
+      console.log(review);
+      const option = { upsert: true };
+      const updatedReview = {
+        $set: {
+          ratings: review.ratings,
+          message: review.message
+        }
+      }
+      console.log('object');
+      const result = await reviewsCollection.updateOne(filter, updatedReview, option);
+      res.send(result)
+
+
+    })
+
+
+
 
 
 
