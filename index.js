@@ -27,6 +27,12 @@ async function run() {
       const services = await cursor.toArray();
       res.send(services);
     })
+
+
+
+
+
+
     app.get('/servicesHome', async (req, res) => {
       const query = {};
       const cursor = serviceCollection.find(query);
@@ -42,7 +48,7 @@ async function run() {
       res.send(service)
     })
 
-    // get customer reviews
+    // get  specific service customer reviews
 
     app.get('/reviews', async (req, res) => {
       const serviceTitle = req.query?.serviceName;
@@ -55,8 +61,17 @@ async function run() {
       }
       const cursor = reviewsCollection.find(newQuery);
       const reviews = await cursor.toArray();
-      res.send(reviews)
+      const sortedReviews = (reviews.sort((a, b) => new Date(b.date) - new Date(a.date)));
+      res.send(sortedReviews)
     })
+
+
+
+
+
+
+
+
 
 
     // get user reviews or my reviews
