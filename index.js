@@ -154,7 +154,6 @@ async function run() {
           message: review.message
         }
       }
-      console.log(updatedReview);
       const result = await reviewsCollection.updateOne(filter, updatedReview, option);
       res.send(result)
     })
