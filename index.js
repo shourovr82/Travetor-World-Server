@@ -28,7 +28,6 @@ function verifyJWT(req, res, next) {
   }
 
   const token = userToken.split(' ')[1];
-  console.log(token);
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
     if (err) {
       return res.status(401).send({ message: 'un authorized Access' })
@@ -65,8 +64,10 @@ async function run() {
     app.get('/servicesHome', async (req, res) => {
       const query = {};
       const cursor = serviceCollection.find(query);
-      const services = await cursor.limit(3).toArray();
-      res.send(services);
+      const services = await cursor.toArray();
+      const sortedServices = (services.sort((a, b) => new Date(b.date) - new Date(a.date)));
+      const latestServices = sortedServices.splice(0, 3);
+      res.send(latestServices);
     })
 
     // get Service Details 
@@ -80,7 +81,7 @@ async function run() {
     // get  specific service customer reviews
 
     app.get('/reviews', async (req, res) => {
-
+      const serviceTitle = req.query?.serviceName;
       let newQuery = {};
       if (req.query?.serviceName) {
         newQuery = {
@@ -97,14 +98,11 @@ async function run() {
 
     // get user reviews or my reviews
     app.get('/myreview', verifyJWT, async (req, res) => {
-      console.log('inside ');
       const useremail = req.query?.email;
-      const serviceTitle = req.query?.serviceName;
       const decoded = req.decoded;
-      console.log(decoded);
 
       if (decoded?.email !== req.query?.email) {
-        res.status(403).send({ message: 'Unauthorized Access' })
+        res.status(403).send({ message: 'Request Forbidden , Login again !' })
       }
 
       let query = {};
@@ -123,7 +121,6 @@ async function run() {
 
     app.post('/addService', async (req, res) => {
       const service = req.body;
-      console.log(service);
       const result = await serviceCollection.insertOne(service);
       res.send(result)
     })
@@ -140,7 +137,6 @@ async function run() {
     // delete my review
     app.delete('/deleteReview/:id', async (req, res) => {
       const id = req.params.id;
-      console.log(id);
       const query = { _id: ObjectId(id) };
       const result = await reviewsCollection.deleteOne(query);
       res.send(result);
@@ -149,10 +145,8 @@ async function run() {
     // update user review
     app.put('/userReview/:id', async (req, res) => {
       const id = req.params.id;
-      console.log(id);
       const filter = { _id: ObjectId(id) };
       const review = req.body;
-      console.log(review);
       const option = { upsert: true };
       const updatedReview = {
         $set: {
@@ -160,7 +154,7 @@ async function run() {
           message: review.message
         }
       }
-      console.log('object');
+      console.log(updatedReview);
       const result = await reviewsCollection.updateOne(filter, updatedReview, option);
       res.send(result)
     })
@@ -172,17 +166,11 @@ async function run() {
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' });
       res.send({ token })
     })
-
-
-
-
-
   }
   finally { }
 }
 
 run().catch(err => console.log(err))
-
 
 
 app.get('/', (req, res) => {
