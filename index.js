@@ -37,10 +37,6 @@ function verifyJWT(req, res, next) {
   }
   )
 
-
-
-
-
 }
 
 
@@ -90,7 +86,7 @@ async function run() {
       }
       const cursor = reviewsCollection.find(newQuery);
       const reviews = await cursor.toArray();
-      const sortedReviews = (reviews.sort((a, b) => new Date(b.date) - new Date(a.date)));
+      const sortedReviews = (reviews.sort((a, b) => new Date(a.date) - new Date(b.date)));
       res.send(sortedReviews)
     })
 
